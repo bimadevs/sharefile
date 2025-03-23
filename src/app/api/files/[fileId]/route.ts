@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/app/lib/prisma'
+import { supabase } from '@/app/lib/supabase'
 
 // API route untuk mendapatkan informasi file berdasarkan ID file
 export async function GET(
@@ -9,14 +9,14 @@ export async function GET(
   try {
     const fileId = params.fileId
 
-    // Cari file berdasarkan ID
-    const file = await prisma.file.findUnique({
-      where: {
-        id: fileId,
-      },
-    })
+    // Cari file berdasarkan ID di Supabase
+    const { data: file, error } = await supabase
+      .from('files')
+      .select('*')
+      .eq('id', fileId)
+      .single()
 
-    if (!file) {
+    if (error || !file) {
       return NextResponse.json(
         { error: 'File tidak ditemukan' },
         { status: 404 }
@@ -27,11 +27,11 @@ export async function GET(
     return NextResponse.json({
       file: {
         id: file.id,
-        name: file.originalName,
+        name: file.original_name,
         size: file.size,
         key: file.key,
-        mimeType: file.mimeType,
-        createdAt: file.createdAt,
+        mimeType: file.mime_type,
+        createdAt: file.created_at,
       }
     })
   } catch (error) {

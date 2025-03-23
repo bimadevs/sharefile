@@ -1,12 +1,3 @@
-import { v4 as uuidv4 } from 'uuid'
-
-/**
- * Menghasilkan string unik untuk key file
- */
-export function generateUniqueKey(): string {
-  return uuidv4()
-}
-
 /**
  * Memformat ukuran file dari bytes menjadi format yang mudah dibaca (KB, MB, GB)
  */

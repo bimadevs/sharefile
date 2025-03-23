@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/app/lib/prisma'
+import { supabase } from '@/app/lib/supabase'
 
 export async function GET(
   request: NextRequest,
@@ -8,14 +8,14 @@ export async function GET(
   try {
     const fileKey = params.key
 
-    // Cari file berdasarkan key
-    const file = await prisma.file.findUnique({
-      where: {
-        key: fileKey,
-      },
-    })
+    // Cari file berdasarkan key di Supabase
+    const { data: file, error } = await supabase
+      .from('files')
+      .select('*')
+      .eq('key', fileKey)
+      .single()
 
-    if (!file) {
+    if (error || !file) {
       return NextResponse.json(
         { error: 'File tidak ditemukan' },
         { status: 404 }
@@ -28,10 +28,10 @@ export async function GET(
     return NextResponse.json({
       id: file.id,
       name: file.name,
-      originalName: file.originalName,
+      originalName: file.original_name,
       size: file.size,
-      mimeType: file.mimeType,
-      createdAt: file.createdAt,
+      mimeType: file.mime_type,
+      createdAt: file.created_at,
     })
   } catch (error) {
     console.error('Error fetching file info:', error)

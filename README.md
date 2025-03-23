@@ -3,10 +3,10 @@
 ![ShareFile](https://img.shields.io/badge/ShareFile-1.0.0-blue)
 ![Next.js](https://img.shields.io/badge/Next.js-14-000000)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6)
-![Prisma](https://img.shields.io/badge/Prisma-5-2D3748)
+![Supabase](https://img.shields.io/badge/Supabase-2.0-3ECF8E)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind-3-38B2AC)
 
-ShareFile adalah platform berbagi file modern dengan antarmuka yang intuitif, dibangun dengan Next.js, TypeScript, Prisma dan Tailwind CSS. Aplikasi ini memungkinkan pengguna untuk mengunggah file hingga 100MB, mendapatkan tautan untuk dibagikan, dan mengunduh file dengan tampilan progres real-time.
+ShareFile adalah platform berbagi file modern dengan antarmuka yang intuitif, dibangun dengan Next.js, TypeScript, Supabase dan Tailwind CSS. Aplikasi ini memungkinkan pengguna untuk mengunggah file hingga 100MB, mendapatkan tautan untuk dibagikan, dan mengunduh file dengan tampilan progres real-time.
 
 ![ShareFile Preview](./public/screenshot.png)
 
@@ -22,9 +22,9 @@ ShareFile adalah platform berbagi file modern dengan antarmuka yang intuitif, di
 
 - **Frontend**: Next.js 14, React, TypeScript, Tailwind CSS
 - **Backend**: Next.js API Routes, Socket.IO
-- **Database**: PostgreSQL dengan Prisma ORM
+- **Database & Auth**: Supabase (PostgreSQL + Auth + Storage)
 - **Styling**: Tailwind CSS dengan komponen kustom
-- **File Storage**: Penyimpanan lokal (dapat dikonfigurasi untuk cloud storage)
+- **File Storage**: Penyimpanan lokal (dapat dikonfigurasi untuk cloud storage melalui Supabase Storage)
 
 ## 📋 Prasyarat
 
@@ -32,14 +32,14 @@ Sebelum memulai, pastikan Anda telah menginstal:
 
 - Node.js (versi 18 atau lebih baru)
 - npm atau yarn
-- PostgreSQL (atau gunakan layanan PostgreSQL seperti Railway, Supabase, dll)
+- Akun Supabase (gratis untuk memulai di [supabase.com](https://supabase.com))
 
 ## 🚀 Cara Instalasi
 
 ### 1. Clone Repositori
 
 ```bash
-git clone https://github.com/username/sharefile.git
+git clone https://github.com/bimadevs/sharefile.git
 cd sharefile
 ```
 
@@ -51,7 +51,55 @@ npm install
 yarn install
 ```
 
-### 3. Konfigurasi Environment Variables
+### 3. Siapkan Supabase
+
+1. Buat akun di [Supabase](https://supabase.com) jika belum memilikinya
+2. Buat proyek baru
+3. Di dashboard Supabase, ambil URL dan kunci API di bagian Settings > API
+4. Buat tabel-tabel berikut melalui Supabase SQL Editor:
+
+```sql
+-- Buat tabel users
+CREATE TABLE public.users (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  email TEXT UNIQUE NOT NULL,
+  name TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Buat tabel files
+CREATE TABLE public.files (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name TEXT NOT NULL,
+  original_name TEXT NOT NULL,
+  mime_type TEXT NOT NULL,
+  size INTEGER NOT NULL,
+  path TEXT NOT NULL,
+  key TEXT UNIQUE NOT NULL,
+  is_public BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  user_id UUID REFERENCES public.users(id) ON DELETE SET NULL
+);
+CREATE INDEX files_user_id_idx ON public.files(user_id);
+CREATE INDEX files_key_idx ON public.files(key);
+
+-- Buat tabel download_stats
+CREATE TABLE public.download_stats (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  file_id UUID REFERENCES public.files(id) ON DELETE CASCADE NOT NULL,
+  user_id UUID REFERENCES public.users(id) ON DELETE SET NULL,
+  ip_address TEXT,
+  downloaded_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  completed BOOLEAN DEFAULT FALSE,
+  speed INTEGER
+);
+CREATE INDEX download_stats_file_id_idx ON public.download_stats(file_id);
+CREATE INDEX download_stats_user_id_idx ON public.download_stats(user_id);
+```
+
+### 4. Konfigurasi Environment Variables
 
 Salin file `.env.example` menjadi `.env` dan sesuaikan dengan pengaturan Anda:
 
@@ -59,26 +107,19 @@ Salin file `.env.example` menjadi `.env` dan sesuaikan dengan pengaturan Anda:
 cp .env.example .env
 ```
 
-Edit file `.env` dan sesuaikan dengan konfigurasi database dan pengaturan aplikasi Anda:
+Edit file `.env` dan sesuaikan dengan konfigurasi Supabase Anda:
 
 ```bash
-# Database connection string
-DATABASE_URL="postgresql://username:password@localhost:5432/sharefile?schema=public"
+# Supabase credentials
+NEXT_PUBLIC_SUPABASE_URL="https://your-project-id.supabase.co"
+NEXT_PUBLIC_SUPABASE_ANON_KEY="your-anon-key"
+SUPABASE_SERVICE_ROLE_KEY="your-service-role-key"
 
 # Batas ukuran file upload (dalam bytes, default 100MB)
 MAX_FILE_SIZE="104857600"
 
 # Direktori penyimpanan file
 UPLOAD_DIR="uploads"
-```
-
-### 4. Siapkan Database
-
-Generate Prisma client dan jalankan migrasi untuk menyiapkan database:
-
-```bash
-npx prisma generate
-npx prisma migrate dev --name init
 ```
 
 ### 5. Jalankan Aplikasi
@@ -107,7 +148,6 @@ yarn start
 
 ```
 sharefile/
-├── prisma/              # Konfigurasi Prisma, migrasi, dan schema
 ├── public/              # Aset statis, ikon
 │   └── icons/           # Ikon untuk berbagai tipe file
 ├── src/                 # Kode sumber utama
@@ -119,8 +159,7 @@ sharefile/
 │   │   ├── components/   # Komponen React
 │   │   ├── download/     # Halaman download file
 │   │   ├── lib/          # Utilitas dan konfigurasi
-│   │   └── admin/        # Halaman admin (opsional)
-│   └── styles/           # File CSS global dan utilitas
+│   │   └── types/        # Type definitions
 ├── uploads/             # Direktori penyimpanan file yang diupload
 ├── .env                 # Environment variables
 ├── .env.example         # Contoh environment variables
@@ -151,22 +190,22 @@ sharefile/
 
 ## 👩‍💻 Pengembangan Lebih Lanjut
 
-### Menambahkan Cloud Storage
+### Menggunakan Supabase Storage
 
-Secara default, aplikasi menggunakan penyimpanan lokal. Untuk mengintegrasikan cloud storage seperti AWS S3 atau Google Cloud Storage:
+Secara default, aplikasi menggunakan penyimpanan lokal. Untuk menggunakan Supabase Storage:
 
-1. Install library yang sesuai, misalnya `@aws-sdk/client-s3` untuk AWS S3
-2. Buat file konfigurasi di `src/app/lib/storage.ts`
-3. Modifikasi `src/app/api/upload/route.ts` dan `src/app/api/download/[key]/route.ts` untuk menggunakan cloud storage
+1. Aktifkan Storage di dashboard Supabase Anda
+2. Buat bucket baru bernama `file-uploads`
+3. Modifikasi `src/app/api/upload/route.ts` untuk menggunakan Supabase Storage
+4. Update `src/app/api/download/[key]/route.ts` untuk mengambil file dari Supabase Storage
 
 ### Menambahkan Autentikasi
 
-Untuk menambahkan autentikasi:
+Untuk menambahkan autentikasi dengan Supabase Auth:
 
-1. Install library seperti NextAuth.js: `npm install next-auth`
-2. Konfigurasi provider autentikasi di `src/app/api/auth/[...nextauth]/route.ts`
-3. Buat komponen login dan register
-4. Tambahkan middleware untuk melindungi rute tertentu
+1. Aktifkan autentikasi yang diinginkan di dashboard Supabase (Email, OAuth, dll)
+2. Gunakan komponen autentikasi Supabase di aplikasi
+3. Tambahkan middleware untuk melindungi rute tertentu
 
 ## 📝 Konfigurasi Lanjutan
 
@@ -230,23 +269,13 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - DATABASE_URL=postgresql://postgres:postgres@db:5432/sharefile
-    depends_on:
-      - db
+      - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
     volumes:
       - uploads:/app/uploads
 
-  db:
-    image: postgres:14
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=sharefile
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-
 volumes:
-  postgres_data:
   uploads:
 ```
 
@@ -276,4 +305,4 @@ Untuk pertanyaan atau masalah, silakan buka issue di repositori GitHub atau hubu
 
 ---
 
-Dikembangkan dengan ❤️ menggunakan [Next.js](https://nextjs.org/)
+Dikembangkan dengan ❤️ menggunakan [Next.js](https://nextjs.org/) dan [Supabase](https://supabase.com/)

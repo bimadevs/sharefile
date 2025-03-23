@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/app/lib/prisma'
-import { generateUniqueKey, createSafeFileName } from '@/app/lib/utils'
+import { supabase, generateUUID } from '@/app/lib/supabase'
+import { createSafeFileName } from '@/app/lib/utils'
 import { writeFile } from 'fs/promises'
 import { mkdir } from 'fs/promises'
 import path from 'path'
@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate unique file key untuk URL
-    const fileKey = generateUniqueKey()
+    const fileKey = generateUUID()
     
     // Buat nama file yang aman untuk penyimpanan
     const safeFileName = createSafeFileName(file.name)
@@ -49,26 +49,40 @@ export async function POST(request: NextRequest) {
     const buffer = await file.arrayBuffer()
     await writeFile(filePath, Buffer.from(buffer))
 
-    // Simpan informasi file ke database
-    const savedFile = await prisma.file.create({
-      data: {
+    // Simpan informasi file ke Supabase
+    const timestamp = new Date().toISOString()
+    const { data: savedFile, error } = await supabase
+      .from('files')
+      .insert({
+        id: generateUUID(),
         name: fileName,
-        originalName: file.name,
-        mimeType: file.type,
+        original_name: file.name,
+        mime_type: file.type,
         size: file.size,
         path: filePath,
         key: fileKey,
-        isPublic: true, // Default public
-      },
-    })
+        is_public: true, // Default public
+        created_at: timestamp,
+        updated_at: timestamp
+      })
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Error saving file to Supabase:', error)
+      return NextResponse.json(
+        { error: 'Terjadi kesalahan saat menyimpan data file' },
+        { status: 500 }
+      )
+    }
 
     // Kirim respons berhasil
     return NextResponse.json({
       id: savedFile.id,
       key: savedFile.key,
-      name: savedFile.originalName,
+      name: savedFile.original_name,
       size: savedFile.size,
-      createdAt: savedFile.createdAt,
+      createdAt: savedFile.created_at,
     })
   } catch (error) {
     console.error('Error processing upload:', error)

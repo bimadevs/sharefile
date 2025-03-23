@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/app/lib/prisma'
+import { supabase, generateUUID } from '@/app/lib/supabase'
 import { readFile } from 'fs/promises'
 import path from 'path'
 import { headers } from 'next/headers'
@@ -11,14 +11,14 @@ export async function GET(
   try {
     const fileKey = params.key
 
-    // Cari file berdasarkan key
-    const file = await prisma.file.findUnique({
-      where: {
-        key: fileKey,
-      },
-    })
+    // Cari file berdasarkan key di Supabase
+    const { data: file, error: fileError } = await supabase
+      .from('files')
+      .select('*')
+      .eq('key', fileKey)
+      .single()
 
-    if (!file) {
+    if (fileError || !file) {
       return NextResponse.json(
         { error: 'File tidak ditemukan' },
         { status: 404 }
@@ -31,24 +31,31 @@ export async function GET(
       // Baca file dari disk
       const fileData = await readFile(file.path)
 
-      // Catat aktivitas download
+      // Catat aktivitas download di Supabase
       const headersList = headers()
       const ipAddress = headersList.get('x-forwarded-for') || 'unknown'
 
-      await prisma.downloadStats.create({
-        data: {
-          fileId: file.id,
-          ipAddress: ipAddress,
+      const { error: statError } = await supabase
+        .from('download_stats')
+        .insert({
+          id: generateUUID(),
+          file_id: file.id,
+          ip_address: ipAddress,
           completed: true,
-        },
-      })
+          downloaded_at: new Date().toISOString()
+        })
+
+      if (statError) {
+        console.error('Error recording download stats:', statError)
+        // Lanjutkan meskipun gagal mencatat status download
+      }
 
       // Kirim file sebagai respons
       const response = new NextResponse(fileData, {
         status: 200,
         headers: {
-          'Content-Type': file.mimeType,
-          'Content-Disposition': `attachment; filename="${encodeURIComponent(file.originalName)}"`,
+          'Content-Type': file.mime_type,
+          'Content-Disposition': `attachment; filename="${encodeURIComponent(file.original_name)}"`,
           'Content-Length': file.size.toString(),
         },
       })
