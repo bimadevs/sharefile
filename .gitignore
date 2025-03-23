@@ -27,6 +27,8 @@ yarn-error.log*
 
 # local env files
 .env*.local
+.env
+.env.production
 
 # vercel
 .vercel
@@ -34,3 +36,44 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# User uploaded files
+/uploads/*
+!/uploads/.gitkeep
+
+# Prisma
+/prisma/migrations/
+/prisma/dev.db
+/prisma/dev.db-journal
+/prisma/*.sqlite
+/prisma/*.sqlite-journal
+
+# IDE Specific files
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# OS specific files
+Thumbs.db
+desktop.ini
+
+# Logs
+logs
+*.log
+.log*
+
+# Database backups
+*.dump
+*.backup
+*.bak
+*.sql
+
+# Cache and temp files
+.cache/
+.temp/
+tmp/
+temp/
+
+# Docker volumes
+docker-volumes/

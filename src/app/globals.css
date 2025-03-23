@@ -3,25 +3,207 @@
 @tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Primary colors */
+  --primary-50: 239 246 255;
+  --primary-100: 219 234 254;
+  --primary-200: 191 219 254;
+  --primary-300: 147 197 253;
+  --primary-400: 96 165 250;
+  --primary-500: 59 130 246;
+  --primary-600: 37 99 235;
+  --primary-700: 29 78 216;
+  --primary-800: 30 64 175;
+  --primary-900: 30 58 138;
+  --primary-950: 23 37 84;
+
+  /* Success & Error Colors */
+  --success-50: 240 253 244;
+  --success-100: 220 252 231;
+  --success-500: 34 197 94;
+  --success-600: 22 163 74;
+  
+  --error-50: 254 242 242;
+  --error-100: 254 226 226;
+  --error-500: 239 68 68;
+  --error-600: 220 38 38;
+
+  /* Grays */
+  --gray-50: 249 250 251;
+  --gray-100: 243 244 246;
+  --gray-200: 229 231 235;
+  --gray-300: 209 213 219;
+  --gray-400: 156 163 175;
+  --gray-500: 107 114 128;
+  --gray-600: 75 85 99;
+  --gray-700: 55 65 81;
+  --gray-800: 31 41 55;
+  --gray-900: 17 24 39;
+  --gray-950: 3 7 18;
+
+  /* Background */
+  --background-start-rgb: 250 251 252;
+  --background-end-rgb: 255 255 255;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background-start-rgb: 0 0 0;
+    --background-end-rgb: 0 0 0;
   }
 }
 
 body {
-  color: var(--foreground);
-  background: var(--background);
+  color: rgb(var(--gray-900));
+  background: linear-gradient(
+    to bottom,
+    rgb(var(--background-start-rgb)),
+    rgb(var(--background-end-rgb))
+  );
   font-family: Arial, Helvetica, sans-serif;
 }
 
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+}
+
+@layer base {
+  html {
+    @apply antialiased;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-outfit font-semibold;
+  }
+  
+  body {
+    @apply font-inter text-gray-800;
+  }
+}
+
+@layer components {
+  /* Card Components */
+  .card {
+    @apply bg-white shadow-sm border border-gray-200 transition-all duration-200;
+  }
+
+  .card-hover {
+    @apply hover:shadow-md hover:border-gray-300;
+  }
+
+  /* Button Components */
+  .btn-primary {
+    @apply bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors inline-block text-center;
+  }
+
+  .btn-outline {
+    @apply bg-white hover:bg-gray-50 text-gray-700 font-medium border border-gray-300 hover:border-gray-400 transition-colors inline-block text-center;
+  }
+
+  .btn-secondary {
+    @apply bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium transition-colors inline-block text-center;
+  }
+
+  .btn-success {
+    @apply bg-green-600 hover:bg-green-700 text-white font-medium transition-colors inline-block text-center;
+  }
+
+  .btn-danger {
+    @apply bg-red-600 hover:bg-red-700 text-white font-medium transition-colors inline-block text-center;
+  }
+
+  .btn-disabled {
+    @apply bg-gray-300 text-gray-500 cursor-not-allowed font-medium inline-block text-center;
+  }
+
+  /* Form Components */
+  .input {
+    @apply w-full py-2 px-4 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors;
+  }
+
+  .input-error {
+    @apply border-red-500 focus:ring-red-500 focus:border-red-500;
+  }
+
+  .input-success {
+    @apply border-green-500 focus:ring-green-500 focus:border-green-500;
+  }
+
+  .input-group {
+    @apply flex items-center border border-gray-300 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500;
+  }
+
+  .input-group .input {
+    @apply border-0 focus:ring-0;
+  }
+
+  /* Badge Components */
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+
+  .badge-blue {
+    @apply bg-blue-100 text-blue-800;
+  }
+
+  .badge-green {
+    @apply bg-green-100 text-green-800;
+  }
+
+  .badge-red {
+    @apply bg-red-100 text-red-800;
+  }
+
+  .badge-yellow {
+    @apply bg-yellow-100 text-yellow-800;
+  }
+
+  .badge-gray {
+    @apply bg-gray-100 text-gray-800;
+  }
+
+  /* Alert Components */
+  .alert {
+    @apply p-4 mb-4 rounded-lg;
+  }
+
+  .alert-info {
+    @apply bg-blue-50 text-blue-700;
+  }
+
+  .alert-success {
+    @apply bg-green-50 text-green-700;
+  }
+
+  .alert-warning {
+    @apply bg-yellow-50 text-yellow-700;
+  }
+
+  .alert-error {
+    @apply bg-red-50 text-red-700;
+  }
+
+  /* Dropdown Components */
+  .dropdown {
+    @apply relative inline-block;
+  }
+
+  .dropdown-menu {
+    @apply absolute right-0 mt-2 py-2 w-48 bg-white shadow-xl rounded-lg border border-gray-200 z-10;
+  }
+
+  .dropdown-item {
+    @apply block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer w-full text-left;
+  }
+}
+
+/* Custom Animations */
+@keyframes pulse-slow {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
   }
 }
